@@ -23,7 +23,7 @@ public class ReqresTests {
         String listNumber = "1";
 
         String response =
-                get("/api/users?page="+listNumber)
+                get("/api/users?page=" + listNumber)
                         .then()
                         .statusCode(200)
                         .extract().response().path("page").toString();
