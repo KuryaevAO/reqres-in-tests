@@ -1,15 +1,17 @@
 package com.kuryaevao;
 
+import com.kuryaevao.lombok.CreatedUser;
+import com.kuryaevao.lombok.LombokUserData;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.get;
+import static com.kuryaevao.Specs.request;
 import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReqresTests {
     @BeforeAll
@@ -20,19 +22,56 @@ public class ReqresTests {
     @Test
     void listUsers() {
 
-        String listNumber = "1";
+        Integer listNumber = 1;
 
-        String response =
-                get("/api/users?page=" + listNumber)
-                        .then()
-                        .statusCode(200)
-                        .extract().response().path("page").toString();
+        Integer response = given()
+                .spec(request)
+                .when()
+                .get("/users?page=" + listNumber)
+                .then()
+                .log().body()
+                .statusCode(200)
+                .extract().response().path("page");
 
         assertThat(response).isEqualTo(listNumber);
     }
 
     @Test
-    void createUser() {
+    void listUsersWithGroovy() {
+
+        given()
+                .spec(request)
+                .when()
+                .get("/users")
+                .then()
+                .log().body()
+                .statusCode(200)
+                .body("data.findAll{it.avatar =~/.*image\\.jpg$/}.avatar.flatten()",
+                        hasItem("https://reqres.in/img/faces/2-image.jpg"))
+                .extract().response().path("page");
+        //.body("data.findAll{it.email =~/.*?@reqres.in/}.email.flatten()",
+        //                        hasItem("eve.holt@reqres.in"));
+    }
+
+    @Test
+    void singleUserUsingLombok() {
+
+        Integer singleUserId = 2;
+
+        LombokUserData data = given()
+                .spec(request)
+                .when()
+                .get("/users/" + singleUserId)
+                .then()
+                .log().body()
+                .statusCode(200)
+                .extract().as(LombokUserData.class);
+
+        assertEquals(singleUserId, data.getUser().getId());
+    }
+
+    @Test
+    void createUserUsingLombok() {
 
         String userName = "Tyler",
                 userJob = "The Creator";
@@ -40,14 +79,21 @@ public class ReqresTests {
         String data = "{ \"name\": \"" + userName + "\", \"job\": \"" + userJob + "\" }";
         System.out.println(data);
 
-        given()
-                .contentType(JSON)
+        Response response = given()
+                .spec(request)
                 .body(data)
                 .when()
-                .post("/api/users")
+                .post("/users")
                 .then()
+                .log().body()
                 .statusCode(201)
-                .body("name", is(userName), "job", is(userJob));
+                .extract()
+                .response();
+
+        CreatedUser createdUser = response.getBody().as(CreatedUser.class);
+
+        assertEquals(userName, createdUser.getName());
+        assertEquals(userJob, createdUser.getJob());
     }
 
     @Test
@@ -60,10 +106,10 @@ public class ReqresTests {
         System.out.println(data);
 
         given()
-                .contentType(JSON)
+                .spec(request)
                 .body(data)
                 .when()
-                .put("/api/users/2")
+                .put("/users/2")
                 .then()
                 .statusCode(200)
                 .body("name", is(userName), "job", is(userJob), "updatedAt", notNullValue());
@@ -73,10 +119,11 @@ public class ReqresTests {
     void deleteUser() {
 
         given()
-                .contentType(JSON)
+                .spec(request)
                 .when()
-                .delete("/api/users/2")
+                .delete("/users/2")
                 .then()
+                .log().body()
                 .statusCode(204);
     }
 
@@ -89,11 +136,12 @@ public class ReqresTests {
                 "}";
 
         given()
-                .contentType(JSON)
+                .spec(request)
                 .body(data)
                 .when()
-                .post("/api/register")
+                .post("/register")
                 .then()
+                .log().body()
                 .statusCode(400)
                 .body("error", is("Note: Only defined users succeed registration"));
     }
