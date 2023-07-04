@@ -1,4 +1,4 @@
-package com.kuryaevao.test;
+package com.kuryaevao;
 
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeAll;
