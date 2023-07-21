@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static com.kuryaevao.Specs.request;
+import static com.kuryaevao.Specs.responseSpec;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -30,7 +31,7 @@ public class ReqresTests {
                 .get("/users?page=" + listNumber)
                 .then()
                 .log().body()
-                .statusCode(200)
+                .spec(responseSpec)
                 .extract().response().path("page");
 
         assertThat(response).isEqualTo(listNumber);
@@ -45,7 +46,7 @@ public class ReqresTests {
                 .get("/users")
                 .then()
                 .log().body()
-                .statusCode(200)
+                .spec(responseSpec)
                 .body("data.findAll{it.avatar =~/.*image\\.jpg$/}.avatar.flatten()",
                         hasItem("https://reqres.in/img/faces/2-image.jpg"))
                 .extract().response().path("page");
@@ -64,7 +65,7 @@ public class ReqresTests {
                 .get("/users/" + singleUserId)
                 .then()
                 .log().body()
-                .statusCode(200)
+                .spec(responseSpec)
                 .extract().as(LombokUserData.class);
 
         assertEquals(singleUserId, data.getUser().getId());
@@ -111,7 +112,7 @@ public class ReqresTests {
                 .when()
                 .put("/users/2")
                 .then()
-                .statusCode(200)
+                .spec(responseSpec)
                 .body("name", is(userName), "job", is(userJob), "updatedAt", notNullValue());
     }
 
